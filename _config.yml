@@ -3,9 +3,9 @@ title: chenjiang3
 subtitle: chenjiang3's blog
 #welcome_message: <a href="https://github.com/onevcat/vno-jekyll" target="_blank">Download the theme</a>
 description: chenjiang3的博客
-creator: <a href="http://onev.cat">@onevcat</a>
+creator: <a href="https://github.com/chenjiang3">@chenjiang3</a>
 
-url: "http://vno.onevcat.com"
+url: "https://github.com/chenjiang3"
 
 permalink: /:year/:month/:title/
 
@@ -16,16 +16,16 @@ redcarpet:
   extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "strikethrough", "superscript", tables]
 
 # supported colors: blue, green, purple, red, orange or slate. If you need clear, leave it empty.
-cover_color: red
+cover_color: white
 
 # The blog button should not be removed.
 blog_button:
-    title: Blog
+    title: 博客
     description: Visit blog
 
 # Navigation buttons in the front page.
 nav:
-    - {title: Projects, description: My Projects, url: 'http://project.onevcat.com'}
+    - {title: 项目, description: My Projects, url: 'https://github.com/chenjiang3'}
     # - {title: Another Button, description: A button, url: 'http://example.com'}
 
 # Pagination
@@ -40,11 +40,11 @@ comment:
     
 # Social
 social:
-    weibo: onevcat
-    github: onevcat
-    twitter: onevcat
-    gplus: 107108267983477358170
-    mail: onev@onevcat.com
+    weibo: chenjiang3
+    github: chenjiang3
+#    twitter: onevcat
+#    gplus: 107108267983477358170
+    mail: 841346457@qq.com
 
 # Google Analytics
 ga:
