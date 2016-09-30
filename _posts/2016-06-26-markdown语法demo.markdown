@@ -1,7 +1,7 @@
 ---
 layout: post
 title: markdown语法demo
-date: 2016-06-26 21:32:24.000000000 +09:00
+date: 3016-06-26 21:32:24.000000000 +09:00
 ---
 
 # Mou
@@ -14,7 +14,7 @@ date: 2016-06-26 21:32:24.000000000 +09:00
 
 ### Syntax
 
-#### Strong and Emphasize 
+#### Strong and Emphasize
 
 **strong** or __strong__ ( Cmd + B )
 
@@ -52,7 +52,7 @@ A ![Resize icon][2] reference style image.
 Inline code are surround by `backtick` key. To create a block code:
 
 	Indent each line by at least 1 tab, or 4 spaces.
-    var Mou = exactlyTheAppIwant; 
+    var Mou = exactlyTheAppIwant;
 
 ####  Ordered Lists
 
@@ -68,7 +68,7 @@ Unordered list are created using "*" + Space:
 
 * Unordered list item
 * Unordered list item
-* Unordered list item 
+* Unordered list item
 
 Or using "-" + Space:
 
