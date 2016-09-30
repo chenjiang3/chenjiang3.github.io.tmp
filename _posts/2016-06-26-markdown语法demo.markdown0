@@ -78,7 +78,7 @@ Or using "-" + Space:
 
 #### Hard Linebreak
 
-End a line with two or more spaces will create a hard linebreak, called `<br />` in HTML. ( Control + Return )  
+End a line with two or more spaces will create a hard linebreak, called `<br />` in HTML. ( Control + Return )
 Above line ended with 2 spaces.
 
 #### Horizontal Rules
