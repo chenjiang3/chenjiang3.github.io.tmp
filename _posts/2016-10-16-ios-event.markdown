@@ -1,0 +1,136 @@
+---
+layout: post
+title: iOS事件机制
+date: 2016-10-15 10:32:24.000000000 +09:00
+---
+### 引言
+&emsp;&emsp;本文讲解主要讲解iOS事件机制相关的知识，包括事件event，application的结构，responder object，Main Event Loop，responder chain 以及相关的使用。
+
+### 事件（event）
+&emsp;&emsp;iOS的事件主要有三种事件，
+
+* Touch Events（触摸事件）：iOS中最主要的就是触摸事件了，比如手指点击，手指移动以及手指离开屏幕等等。手指触摸屏幕的时候，iOS系统会生成[UITouch](https://developer.apple.com/reference/uikit/uitouch)对象来表示这次触摸，UITouch对象保存了触摸的一些信息，比如所接触的view，触摸点的坐标，时间戳，以及触摸的时期（UITouchPhase）。有了这些touch对象后，操作系统会生成事件对象（[UIEvent](https://developer.apple.com/reference/uikit/uievent)）,event对象保存了之前的一系列UITouch对象，然后操作系统把这个event对象分发到能处理这个事件的view中（或者其他的对象，比如viewcontroller，window，只要是responder的子类都能响应事件），如下图所示，
+![post icon](/assets/postAssets/ios-event/event_dispatch.jpg)
+&emsp;&emsp;所有继承自UIResponder的是可以响应事件的，只要实现了下面四个方法
+  1. touchesBegan:withEvent:手指开始触摸的时候
+  2. touchesMoved:withEvent:手指移动的时候
+  3. touchesEnded:withEvent:手指离开的时候
+  4. touchesCancelled:withEvent:外部事件到来的时候，比如电话打进来。
+这些方法的第一个参数是一个集合对象（set），里面保存了一系列的touch对象，第二个参数UIEvent对象。
+
+*  Motion Events（运动事件）：比如摇一摇，系统检测到这类事件，然后发送给对一个application，然后由application发送给第一响应者（first responder）。
+
+*  Remote Events （远程事件）：不是很懂，比如耳机按键控制。
+
+### application的结构
+&emsp;&emsp;在iOS中，视图的组织是以树状的形式组织起来的，如下图所示，一个简单的iOS应用程序就大概有这样的结构，
+![post icon](/assets/postAssets/ios-event/application-1.png)
+整个app由UIApplication表示，application管理了一个window对象，window里面管理着许多controller，controller又有许多的view构成。
+
+&emsp;&emsp;每一个iOS app启动后都是一个独立的进程，UIApplication对象就代表一个应用程序，在iOS中，每一个app有且只有一个单利形式存在的UIApplication对象，可以通过[UIApplication sharedApplication]获取这个对象。application的主要作用是管理app的状态，以及接受和分发事件。比如下面这张图表示的，
+
+![post icon](/assets/postAssets/ios-event/application-function.jpg)
+
+&emsp;&emsp;UIApplication可以接受用户输入事件或者系统事件，并把这些事件分发给合适的responder对象处理，同时UIApplication管理着系统的状态，比如app启动完毕、app进入后台，app从后台起来或者接受通知，等等。所有这些状态的改变都由application来管理，在实际的开发中，这些状态的改变会发给application的delegate，通过delegate来做响应的处理。
+
+### Main Event Loop
+&emsp;&emsp;跟其他平台的应用程序一样，iOS app启动之后也有一个消息循环系统，在iOS中被成为main event loop，内部是一个run loop，如下图所示
+![post icon](/assets/postAssets/ios-event/main_event_loop.jpg)
+在main event loop里面运行着一个run loop，application不断的获取事件，并且把事件分发给能处理这个事件的对象，处理完成之后，根据处理结果更新app的状态。app不断的重复这样的循环直到关闭app。上图里面core objects就是能够响应事件的对象，比如说window，view等等。
+
+### responder对象和responder chain
+&emsp;&emsp;responder对象就是能响应事件的对象，在UIKit中，有一个[UIResponder](https://developer.apple.com/reference/uikit/uiresponder)类，这个类是所有能响应事件的类的父类，比如说view和viewcontroller，甚至是UIApplication。
+
+&emsp;&emsp;由上文的application的结构可以看出iOS中所有的视图都是按照树形来组织的，每一个view都有自己的superview，包括viewcontroller的topmost view（也就是controller的self.view），当一个view被加到superview上的时候，它的nextResponder属性就会指向它的superview，并且controller的topmost view的nextResponder会指向所在的viewcontroller，controller的nextResponder指向window，Window的nextResponder指向UIApplication，这样，整个app就通过nextResponder串成一条链，就是所谓的响应链。响应链是一条虚拟的链，就是每个responder的nextResponder属性链接起来的。
+
+
+### Hit-Testing View
+&emsp;&emsp;Hit-Testing View就是具体响应事件的view。window会根据不同的事件寻找这个view，对于touch事件，window会最先传递给事件发生的那个view，对于motion事件和remote事件，window会最先把事件传递个first responder。motion事件和remote事件先不讲，下面主要讲寻找touch事件响应者。
+
+&emsp;&emsp;寻找具体响应的过程被成为Hit-Testing。Hit-Testing就相当于一个探测器，通过这个探测器可以找到手指是否点击在某个view上面，在代码里面，这个Hit-Testing就是一个检测方法，这个方法存在于UIView中。
+
+```
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event;
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event;
+```
+&emsp;&emsp;每当手指触摸屏幕，UIApplication接受到触摸的事件后，就会去调UIWindow的hitTest: withEvent:方法，看看当前的触摸的点是否在window内，如果在，则继续递归的调用subview的hitTest:(CGPoint)point withEvent:方法，直到找到最后view。通过下面这张图看看它是怎么工作的。
+
+ ![post icon](/assets/postAssets/ios-event/hit-test.png)
+
+ &emsp;&emsp;上图的关系是，UIWindow有一个MainView，MainView有三个subView：view A, view B, view C,三个subview分别有两个subview，view A, B, C的层级关系是view A在最下面，view B中间，view C最上，并且view A和view B有一部分重叠。此时，如果手指点击在view A和view B的重叠部分，按照hit-test的方式，顺序如下图所示
+
+![post icon](/assets/postAssets/ios-event/hit-test-2.png)
+
+&emsp;&emsp;这里的查找顺序是从window开始的，一开始，向根结点UIWindow发送hitTest: withEvent:消息，这个方法返回的view就是Hit-Testing View，也就是最后能响应事件的view。当向window发送hitTest: withEvent:的时候，hitTest: withEvent:会检测当前的点击是否在window的显示范围内，如果在，则递归的调用subview的hitTest: withEvent:方法，这里调用的顺序是按照subview显示的层级来的，越在上面的subview越早调用hitTest: withEvent:，如果点击的点不在当前的subview的返回内，则它的subview也不会在遍历了。比如说遍历到view C，发现点击的点不在view C的返回内，那么就不在遍历view C的subview了，直接遍历view B，发现在view B的显示返回内，则继续调用view B的subview的hitTest: withEvent:进行遍历，直到找到view B.1，说明view B.1就是Hit-Testing view直接返回到根结点，这时view A也不会在遍历了（这也说明了被覆盖的view为什么默认情况下不能响应用户的操作）。下面整个过程的流程图：
+
+![post icon](/assets/postAssets/ios-event/hit-test-flow.png)
+
+&emsp;&emsp;注意这里判断的时候还会检测view的一些属性，比如userInteractionEnabled、hidden、alpha，这些属性都会影响到view是否能响应事件，如果这些不响应直接返回nil（注意alpha的值是0.01）。同时还调了一个pointInside:withEvent:方法，这个也是view的方法，用来检测一个点是否在view的frame内，代码大概如下所示：
+
+```
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (!self.isUserInteractionEnabled || self.isHidden || self.alpha <= 0.01 ) {
+        return nil;
+    }
+    if ([self pointInside:point withEvent:event]) {
+        for (UIView *subView in [self.subviews reverseObjectEnumerator]) {
+            CGPoint convertedPoint = [subView convertPoint:point fromView:self];
+            UIView *hitTestView = [subView hitTest:convertedPoint withEvent:event];
+            if (hitTestView) {
+                return  hitTestView;
+            }
+        }
+        return self;
+    }
+    return nil;
+}
+```
+
+### Hit-Test的应用
+
+* 扩大button的点击区域：
+
+&emsp;&emsp;在实际的开发过程中，可能会出现这样的需求，一个button设计的很小，此时需要一个更大的点击区域，有一种方法就是加一个透明的更大的button来响应点击事件，这样做可以实现，但是多了一个button对象。还有另外一种方法就是通过重写hittest:withEvent:，在方法里面判断如果点在button的frame之外的某个返回内，也返回button自己，这样就可以实现增大点击区域的效果,(也可以使点击区域变成一个圆形)。代码如下
+
+```
+-(UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if (!self.isUserInteractionEnabled || self.isHidden || self.alpha <= 0.01) {
+        return nil;
+    }
+
+    CGRect touchRect = CGRectInset(self.bounds, -80, -80);
+    if (CGRectContainsPoint(touchRect, point)) {
+        for (UIView *subView in [self.subviews reverseObjectEnumerator]) {
+            CGPoint convertedPoint = [subView convertPoint:point fromView:self];
+            UIView *hitTestView = [subView hitTest:convertedPoint withEvent:event];
+            if (hitTestView) {
+                return hitTestView;
+            }
+        }
+        return self;
+    }
+    return nil;
+}
+```
+
+* 将事件传递给兄弟view：
+
+&emsp;&emsp;比如上图，如果view A想要响应事件而不是view B，不管是否重叠，在默认情况下，在重叠部分，view A是不能响应事件的，除非让view B的uerInteractionEnabled设为NO。如果不把userInteractionEnabled设为NO的话可以重写B的hittest:withEvent:，代码如下
+
+```
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    UIView *hittestView = [super hitTest:point withEvent:event];
+    if (hittestView == self) {
+        return nil;
+    }
+    return hittestView;
+}
+```
+
+### 事件传递
+&emsp;&emsp;有了响应链，并且找到了第一个响应者，下面就把事件发送到这个响应者了，首先UIApplication通过发送sendEvent消息，把event发送给window，接着window也发送sendEvent消息，把事件发送给第一响应者，这个过程可以从调用堆栈中看出
+![post icon](/assets/postAssets/ios-event/send-event-0.png)
+
+![post icon](/assets/postAssets/ios-event/send-event-1.png)
+
+&emsp;&emsp;当点击button的时候（假设第一响应者是个button），UIApplication会发送开始点击和结束点击事件，分别会调到button的touchesBegan和touchesEnded方法，这样就是实现了事件的传递。而事件的响应，可以看第二个图，在touchesEnded里面通过调用UIApplication的sendAction:to:from:forEvent:来实现。如果这个button不响应事件，那么就会根据响应者链，把事件传给button的nextResponder来响应。这样一级一级往上传递直到UIApplication对象，如果application对象还是不能响应这个事件，那么就直接抛弃这个事件。
