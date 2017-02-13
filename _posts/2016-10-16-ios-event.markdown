@@ -11,7 +11,7 @@ date: 2016-10-15 10:32:24.000000000 +09:00
 
 * Touch Events（触摸事件）：iOS中最主要的就是触摸事件了，比如手指点击，手指移动以及手指离开屏幕等等。手指触摸屏幕的时候，iOS系统会生成[UITouch](https://developer.apple.com/reference/uikit/uitouch)对象来表示这次触摸，UITouch对象保存了触摸的一些信息，比如所接触的view，触摸点的坐标，时间戳，以及触摸的时期（UITouchPhase）。有了这些touch对象后，操作系统会生成事件对象（[UIEvent](https://developer.apple.com/reference/uikit/uievent)）,event对象保存了之前的一系列UITouch对象，然后操作系统把这个event对象分发到能处理这个事件的view中（或者其他的对象，比如viewcontroller，window，只要是responder的子类都能响应事件），如下图所示，
 ![post icon](/assets/postAssets/ios-event/event_dispatch.jpg)
-&emsp;&emsp;所有继承自UIResponder的是可以响应事件的，只要实现了下面四个方法
+&emsp;&emsp;所有继承自[UIResponder](https://developer.apple.com/reference/uikit/uiresponder?language=objc)的是可以响应事件的，它有四个对应的方法
   1. touchesBegan:withEvent:手指开始触摸的时候
   2. touchesMoved:withEvent:手指移动的时候
   3. touchesEnded:withEvent:手指离开的时候
